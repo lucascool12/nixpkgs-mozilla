@@ -280,7 +280,7 @@ let
           # version' = builtins.match "([^ ]*) [(]([^ ]*) ([^ ]*)[)]" pkg.version;
           # version = "${elemAt version' 0}-${elemAt version' 2}-${elemAt version' 1}";
           namesAndSrcs = getComponents pkgs.pkg name targets extensions targetExtensions stdenv fetchurl;
-          components = installComponents stdenv namesAndSrcs;
+          components = installComponents stdenv (builtins.traceVerbose namesAndSrcs namesAndSrcs);
           # componentsOuts = builtins.map (comp: (super.lib.strings.escapeNixString (super.lib.getOutput "out" comp))) components;
         in components) { extensions = []; targets = []; targetExtensions = []; }
     );
