@@ -282,7 +282,7 @@ let
           namesAndSrcs = getComponents pkgs.pkg name targets extensions targetExtensions stdenv fetchurl;
           components = installComponents stdenv namesAndSrcs;
           # componentsOuts = builtins.map (comp: (super.lib.strings.escapeNixString (super.lib.getOutput "out" comp))) components;
-        in components) { extensions = []; targets = []; targetExtensions = []; }
+        in (builtins.elemAt components 0)) { extensions = []; targets = []; targetExtensions = []; }
     );
 
   fromManifest = sha256: manifest: { stdenv, lib, fetchurl, patchelf }:
