@@ -269,7 +269,7 @@ let
   #                       you will need to specify this extension in the extensions options or it will not be installed!
   fromManifestFile = manifest: { stdenv, lib, fetchurl, patchelf }:
     let
-      inherit (builtins) elemAt;
+      # inherit (builtins) elemAt;
       inherit (super) makeOverridable;
       inherit (super.lib) flip mapAttrs;
       pkgs = fromTOML (builtins.readFile manifest);
@@ -277,61 +277,12 @@ let
     flip mapAttrs pkgs.pkg (name: pkg:
       makeOverridable ({extensions, targets, targetExtensions}:
         let
-          version' = builtins.match "([^ ]*) [(]([^ ]*) ([^ ]*)[)]" pkg.version;
-          version = "${elemAt version' 0}-${elemAt version' 2}-${elemAt version' 1}";
+          # version' = builtins.match "([^ ]*) [(]([^ ]*) ([^ ]*)[)]" pkg.version;
+          # version = "${elemAt version' 0}-${elemAt version' 2}-${elemAt version' 1}";
           namesAndSrcs = getComponents pkgs.pkg name targets extensions targetExtensions stdenv fetchurl;
           components = installComponents stdenv namesAndSrcs;
-          componentsOuts = builtins.map (comp: (super.lib.strings.escapeNixString (super.lib.getOutput "out" comp))) components;
-        in
-          super.pkgs.symlinkJoin {
-            name = name + "-" + version;
-            paths = components;
-            postBuild = ''
-              # If rustc or rustdoc is in the derivation, we need to copy their
-              # executable into the final derivation. This is required
-              # for making them find the correct SYSROOT.
-              # Similarly, we copy the python files for gdb pretty-printers since
-              # its auto-load-safe-path mechanism doesn't like symlinked files.
-              for target in $out/bin/{rustc,rustdoc} $out/lib/rustlib/etc/*.py; do
-                if [ -e $target ]; then
-                  cp --remove-destination "$(realpath -e $target)" $target
-
-                  # The SYSROOT is determined by using the librustc_driver-*.so.
-                  # So, we need to point to the *.so files in our derivation.
-                  chmod u+w $target
-                  patchelf --set-rpath "$out/lib" $target || true
-                fi
-              done
-
-              # Here we copy the librustc_driver-*.so to our derivation.
-              # The SYSROOT is determined based on the path of this library.
-              if test "" != $out/lib/librustc_driver-*.so &> /dev/null; then
-                RUSTC_DRIVER_PATH=$(realpath -e $out/lib/librustc_driver-*.so)
-                rm $out/lib/librustc_driver-*.so
-                cp $RUSTC_DRIVER_PATH $out/lib/
-              fi
-            '';
-
-            # Export the manifest file as part of the nix-support files such
-            # that one can compute the sha256 of a manifest to freeze it for
-            # reproducible builds.
-            MANIFEST_FILE = manifest;
-            postInstall = ''
-              mkdir $out/nix-support
-              cp $MANIFEST_FILE $out/nix-support/manifest.toml
-            '';
-
-            # Add the compiler as part of the propagated build inputs in order
-            # to run:
-            #
-            #    $ nix-shell -p rustChannels.stable.rust
-            #
-            # And get a fully working Rust compiler, with the stdenv linker.
-            propagatedBuildInputs = [ stdenv.cc ];
-
-            meta.platforms = lib.platforms.all;
-          }
-      ) { extensions = []; targets = []; targetExtensions = []; }
+          # componentsOuts = builtins.map (comp: (super.lib.strings.escapeNixString (super.lib.getOutput "out" comp))) components;
+        in components) { extensions = []; targets = []; targetExtensions = []; }
     );
 
   fromManifest = sha256: manifest: { stdenv, lib, fetchurl, patchelf }:
